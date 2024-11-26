@@ -1,76 +1,107 @@
-// Select form and posts section
-const form = document.getElementById('post-form');
-const postsSection = document.getElementById('posts');
+// Import the Firebase functions you need
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
-// Handle form submission
-form.addEventListener('submit', function (event) {
-    event.preventDefault(); // Prevent page refresh
+// Firebase configuration (use your Firebase project details)
+const firebaseConfig = {
+    apiKey: "AIzaSyDYUkYeTl53Nxi3eCo_QXt9AFjcdMiPzIU",
+    authDomain: "memecoinblog.firebaseapp.com",
+    projectId: "memecoinblog",
+    storageBucket: "memecoinblog.firebasestorage.app",
+    messagingSenderId: "974642913362",
+    appId: "1:974642913362:web:7215902873c3a40d4bbf8b",
+    measurementId: "G-R1GN8X4G7M"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// DOM elements
+const form = document.getElementById('post-form');
+const postsContainer = document.getElementById('posts');
+
+// Submit a new post
+form.addEventListener('submit', async (event) => {
+    event.preventDefault();
 
     // Get username and message values
     const username = document.getElementById('username').value.trim();
     const message = document.getElementById('message').value.trim();
 
-    // Validate inputs
-    if (!username || !message) {
-        alert('Both fields are required!');
-        return;
-    }
-    if (message.length > 500) {
-        alert('Message cannot exceed 500 characters!');
+    // Input validation
+    if (!username || !message || message.length > 500) {
+        alert("Please enter a valid username and message (max 500 characters).");
         return;
     }
 
-    // Create a new post element
-    const post = document.createElement('div');
-    post.classList.add('post');
-    post.innerHTML = `
-        <p class="username">${username}</p>
-        <p>${message}</p>
-    `;
+    try {
+        // Add the post to Firestore
+        await addDoc(collection(db, "posts"), {
+            username,
+            message,
+            timestamp: serverTimestamp()
+        });
 
-    // Add the post to the posts section
-    postsSection.appendChild(post);
+        // Clear the form
+        form.reset();
 
-    // Clear the form
-    form.reset();
-});
-// Load posts from localStorage on page load
-window.addEventListener('load', () => {
-    const savedPosts = JSON.parse(localStorage.getItem('forumPosts')) || [];
-    savedPosts.forEach(postData => {
-        addPost(postData.username, postData.message);
-    });
+        // Reload posts after adding a new one
+        loadPosts();
+    } catch (error) {
+        console.error("Error adding post: ", error);
+        alert("Could not post your message. Try again.");
+    }
 });
 
-// Save posts to localStorage
-function savePosts() {
-    const posts = Array.from(document.querySelectorAll('.post')).map(post => ({
-        username: post.querySelector('.username').textContent,
-        message: post.querySelector('p:last-child').textContent
-    }));
-    localStorage.setItem('forumPosts', JSON.stringify(posts));
+// Load all posts from Firestore
+async function loadPosts() {
+    // Clear previous posts
+    postsContainer.innerHTML = '';
+
+    try {
+        // Query posts ordered by timestamp (most recent first)
+        const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(postsQuery);
+
+        querySnapshot.forEach((doc) => {
+            const { username, message, timestamp } = doc.data();
+            const postId = doc.id;
+
+            // Format timestamp (optional)
+            const time = timestamp?.toDate().toLocaleString() || "Just now";
+
+            // Create a new post element
+            const postElement = document.createElement('div');
+            postElement.classList.add('post');
+            postElement.innerHTML = `
+                <p class="username">${username} <span class="time">(${time})</span></p>
+                <p>${message}</p>
+                <button class="delete-button" data-id="${postId}">Delete</button>
+            `;
+
+            // Attach delete functionality
+            postElement.querySelector('.delete-button').addEventListener('click', () => deletePost(postId));
+
+            // Add the post element to the container
+            postsContainer.appendChild(postElement);
+        });
+    } catch (error) {
+        console.error("Error loading posts: ", error);
+        alert("Could not load posts. Try again later.");
+    }
 }
 
-// Add a post to the DOM and save
-function addPost(username, message) {
-    const post = document.createElement('div');
-    post.classList.add('post');
-    post.innerHTML = `
-        <p class="username">${username}</p>
-        <p>${message}</p>
-    `;
-    postsSection.appendChild(post);
-    savePosts();
+// Delete a post from Firestore
+async function deletePost(postId) {
+    try {
+        await deleteDoc(doc(db, "posts", postId));
+        loadPosts(); // Refresh posts after deletion
+    } catch (error) {
+        console.error("Error deleting post: ", error);
+        alert("Could not delete the post. Try again.");
+    }
 }
 
-// Handle form submission
-form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    const username = document.getElementById('username').value.trim();
-    const message = document.getElementById('message').value.trim();
-
-    if (!username || !message || message.length > 500) return;
-
-    addPost(username, message);
-    form.reset();
-});
+// Load posts on page load
+window.onload = loadPosts;
