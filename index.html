@@ -1,25 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Forum</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
-    <header>
-        <h1>Simple Forum</h1>
-    </header>
+    <h1>Welcome to My Forum</h1>
+    <form id="post-form">
+        <input type="text" id="username" placeholder="Your Name" required>
+        <textarea id="message" placeholder="Your Message" required></textarea>
+        <button type="submit">Post</button>
+    </form>
+    <div id="posts"></div>
 
-    <main>
-        <!-- Form for posting messages -->
-        <form id="post-form">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" placeholder="Your name" required>
-            
-            <label for="message">Message:</label>
-            <textarea id="message" name="message" placeholder="Your message" required></textarea>
-            
-            <button type="submit">Post</button>
-        </form>
+    <!-- Firebase setup -->
+    <script type="module">
+        // Import the functions you need from the SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
 
-        <!-- Section to display posts -->
-        <section id="posts">
-            <h2>Messages</h2>
-            <!-- Posts will appear here -->
-        </section>
-    </main>
-<script src="script.js"></script>
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDYUkYeTl53Nxi3eCo_QXt9AFjcdMiPzIU",
+            authDomain: "memecoinblog.firebaseapp.com",
+            projectId: "memecoinblog",
+            storageBucket: "memecoinblog.firebasestorage.app",
+            messagingSenderId: "974642913362",
+            appId: "1:974642913362:web:7215902873c3a40d4bbf8b",
+            measurementId: "G-R1GN8X4G7M"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+    </script>
 </body>
+</html>
