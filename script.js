@@ -1,9 +1,8 @@
-// Import Firebase functions
+// Firebase configuration and initialization
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, orderBy, query, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDYUkYeTl53Nxi3eCo_QXt9AFjcdMiPzIU",
     authDomain: "memecoinblog.firebaseapp.com",
@@ -14,154 +13,152 @@ const firebaseConfig = {
     measurementId: "G-R1GN8X4G7M"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+const auth = getAuth();
 
-// DOM elements
-const form = document.getElementById('post-form');
+// DOM Elements
+const loginSection = document.getElementById('login-section');
+const signupSection = document.getElementById('signup-section');
+const loginButton = document.getElementById('login-button');
+const signupButton = document.getElementById('signup-button');
+const postSection = document.getElementById('post-section');
 const postsContainer = document.getElementById('posts');
-const signupForm = document.getElementById('signup-form');
-const loginForm = document.getElementById('login-form');
-const logoutButton = document.getElementById('logout-button');
+const searchBar = document.getElementById('search-bar');
+const searchButton = document.getElementById('search-button');
 
-// Track current user
-let currentUser = null;
+// Toggle Login and Signup Forms
+loginButton.addEventListener('click', () => {
+    loginSection.classList.remove('hidden');
+});
 
-// Authentication: Signup
-signupForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value.trim();
+signupButton.addEventListener('click', () => {
+    signupSection.classList.remove('hidden');
+});
+
+document.querySelectorAll('.close-button').forEach(button => {
+    button.addEventListener('click', () => {
+        loginSection.classList.add('hidden');
+        signupSection.classList.add('hidden');
+    });
+});
+
+// Signup Functionality
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('signup-username').value;
+    const email = document.getElementById('signup-email').value;
+    const password = document.getElementById('signup-password').value;
 
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        alert('Signup successful!');
-        signupForm.reset();
-    } catch (error) {
-        console.error("Error during signup: ", error);
-        alert("Signup failed. Please try again.");
-    }
-});
-
-// Authentication: Login
-loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        alert('Login successful!');
-        loginForm.reset();
-    } catch (error) {
-        console.error("Error during login: ", error);
-        alert("Login failed. Please check your credentials and try again.");
-    }
-});
-
-// Authentication: Logout
-logoutButton.addEventListener('click', async () => {
-    try {
-        await signOut(auth);
-        alert('Logged out successfully!');
-    } catch (error) {
-        console.error("Error during logout: ", error);
-        alert("Logout failed. Please try again.");
-    }
-});
-
-// Handle authentication state
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        form.style.display = 'block';
-        logoutButton.style.display = 'block';
-        loginForm.style.display = 'none';
-        signupForm.style.display = 'none';
-        loadPosts();
-    } else {
-        currentUser = null;
-        form.style.display = 'none';
-        logoutButton.style.display = 'none';
-        loginForm.style.display = 'block';
-        signupForm.style.display = 'block';
-        postsContainer.innerHTML = '';
-    }
-});
-
-// Submit a new post
-form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const message = document.getElementById('message').value.trim();
-
-    if (!message || message.length > 500) {
-        alert("Please enter a valid message (max 500 characters).");
-        return;
-    }
-
-    try {
-        await addDoc(collection(db, "posts"), {
-            username: currentUser.email,
-            message,
-            timestamp: serverTimestamp()
+        const user = userCredential.user;
+        await addDoc(collection(db, "users"), {
+            uid: user.uid,
+            username: username,
+            email: email
         });
-        form.reset();
-        loadPosts();
+        alert("Signup successful!");
+        signupSection.classList.add('hidden');
     } catch (error) {
-        console.error("Error adding post: ", error);
-        alert("Could not post your message. Try again.");
+        console.error("Error signing up: ", error.message);
     }
 });
 
-// Load all posts
-async function loadPosts() {
-    postsContainer.innerHTML = '';
+// Login Functionality
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const identifier = document.getElementById('login-username-email').value;
+    const password = document.getElementById('login-password').value;
 
     try {
-        const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-        const querySnapshot = await getDocs(postsQuery);
+        // Check if login is via email or username
+        let email = identifier;
+        if (!identifier.includes("@")) {
+            const q = query(collection(db, "users"), where("username", "==", identifier));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) throw new Error("Username not found");
+            email = querySnapshot.docs[0].data().email;
+        }
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Login successful!");
+        loginSection.classList.add('hidden');
+    } catch (error) {
+        console.error("Error logging in: ", error.message);
+    }
+});
 
-        querySnapshot.forEach((doc) => {
-            const { username, message, timestamp } = doc.data();
-            const postId = doc.id;
-            const time = timestamp?.toDate().toLocaleString() || "Just now";
+// Post Functionality
+document.getElementById('post-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = document.getElementById('message').value;
 
+    try {
+        const user = auth.currentUser;
+        if (!user) throw new Error("User not logged in");
+
+        const q = query(collection(db, "users"), where("uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        const username = querySnapshot.docs[0].data().username;
+
+        await addDoc(collection(db, "posts"), {
+            username: username,
+            message: message,
+            timestamp: new Date()
+        });
+        alert("Post added!");
+        loadPosts();
+        document.getElementById('message').value = "";
+    } catch (error) {
+        console.error("Error adding post: ", error.message);
+    }
+});
+
+// Load Posts
+async function loadPosts() {
+    postsContainer.innerHTML = "";
+    const querySnapshot = await getDocs(collection(db, "posts"));
+    querySnapshot.forEach(doc => {
+        const post = doc.data();
+        const postElement = document.createElement('div');
+        postElement.classList.add('post');
+        postElement.innerHTML = `
+            <p class="username">${post.username}</p>
+            <p>${post.message}</p>
+        `;
+        postsContainer.appendChild(postElement);
+    });
+}
+
+// Search Posts
+searchButton.addEventListener('click', async () => {
+    const searchTerm = searchBar.value.toLowerCase();
+    postsContainer.innerHTML = "";
+    const querySnapshot = await getDocs(collection(db, "posts"));
+    querySnapshot.forEach(doc => {
+        const post = doc.data();
+        if (post.message.toLowerCase().includes(searchTerm) || post.username.toLowerCase().includes(searchTerm)) {
             const postElement = document.createElement('div');
             postElement.classList.add('post');
             postElement.innerHTML = `
-                <p class="username">${username} <span class="time">(${time})</span></p>
-                <p>${message}</p>
-                ${currentUser && currentUser.email === username ? `<button class="delete-button" data-id="${postId}">Delete</button>` : ''}
+                <p class="username">${post.username}</p>
+                <p>${post.message}</p>
             `;
-
-            if (currentUser && currentUser.email === username) {
-                postElement.querySelector('.delete-button').addEventListener('click', () => deletePost(postId));
-            }
-
             postsContainer.appendChild(postElement);
-        });
-    } catch (error) {
-        console.error("Error loading posts: ", error);
-        alert("Could not load posts. Try again later.");
-    }
-}
+        }
+    });
+});
 
-// Delete a post
-async function deletePost(postId) {
-    try {
-        await deleteDoc(doc(db, "posts", postId));
+// Handle Authentication State
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        postSection.classList.remove('hidden');
         loadPosts();
-    } catch (error) {
-        console.error("Error deleting post: ", error);
-        alert("Could not delete the post. Try again.");
+        loginButton.style.display = "none";
+        signupButton.style.display = "none";
+    } else {
+        postSection.classList.add('hidden');
+        loginButton.style.display = "inline";
+        signupButton.style.display = "inline";
     }
-}
-
-// Load posts when the user logs in
-window.onload = () => {
-    if (currentUser) {
-        loadPosts();
-    }
-};
+});
