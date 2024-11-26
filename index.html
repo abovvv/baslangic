@@ -3,45 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forum with Firebase</title>
+    <title>Forum</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <h1>Welcome to My Forum</h1>
-    </header>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <h1 class="logo">Forum</h1>
+        <div class="nav-links">
+            <button id="login-button">Login</button>
+            <button id="signup-button">Signup</button>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <section id="login-section" class="popup hidden">
+        <form id="login-form">
+            <h2>Login</h2>
+            <label for="login-username-email">Username or Email:</label>
+            <input type="text" id="login-username-email" placeholder="Enter username or email" required>
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" placeholder="Enter password" required>
+            <button type="submit">Login</button>
+            <button type="button" class="close-button">Close</button>
+        </form>
+    </section>
 
     <!-- Signup Form -->
-    <section id="signup-section">
+    <section id="signup-section" class="popup hidden">
         <form id="signup-form">
             <h2>Signup</h2>
+            <label for="signup-username">Username:</label>
+            <input type="text" id="signup-username" placeholder="Choose a username" required>
             <label for="signup-email">Email:</label>
             <input type="email" id="signup-email" placeholder="Enter your email" required>
             <label for="signup-password">Password:</label>
-            <input type="password" id="signup-password" placeholder="Enter your password" required>
+            <input type="password" id="signup-password" placeholder="Enter a password" required>
             <button type="submit">Signup</button>
+            <button type="button" class="close-button">Close</button>
         </form>
     </section>
 
-    <!-- Login Form -->
-    <section id="login-section">
-        <form id="login-form">
-            <h2>Login</h2>
-            <label for="login-email">Email:</label>
-            <input type="email" id="login-email" placeholder="Enter your email" required>
-            <label for="login-password">Password:</label>
-            <input type="password" id="login-password" placeholder="Enter your password" required>
-            <button type="submit">Login</button>
-        </form>
-    </section>
-
-    <!-- Logout Button -->
-    <section id="logout-section" style="display: none;">
-        <button id="logout-button">Logout</button>
+    <!-- Search Bar -->
+    <section id="search-section">
+        <input type="text" id="search-bar" placeholder="Search posts...">
+        <button id="search-button">Search</button>
     </section>
 
     <!-- Post Form -->
-    <section id="post-section" style="display: none;">
+    <section id="post-section" class="hidden">
         <form id="post-form">
             <h2>Create a Post</h2>
             <textarea id="message" placeholder="Write your post here..." required></textarea>
@@ -55,7 +65,6 @@
         <div id="posts"></div>
     </section>
 
-    <!-- Script -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
